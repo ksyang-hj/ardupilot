@@ -10,6 +10,15 @@
 const uint16_t INS_SITL_SENSOR_A[] = { 1000, 1000 };
 const uint16_t INS_SITL_SENSOR_B[] = { 760, 800 };
 
+
+struct accelMutateValue {
+    int count;
+    int x;
+    int y;
+    int z;
+};
+
+
 class AP_InertialSensor_SITL : public AP_InertialSensor_Backend
 {
 public:

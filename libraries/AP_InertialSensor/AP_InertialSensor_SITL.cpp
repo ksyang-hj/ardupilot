@@ -2,6 +2,8 @@
 #include "AP_InertialSensor_SITL.h"
 #include <SITL/SITL.h>
 #include <stdio.h>
+#include <sys/shm.h>
+#include <sys/ipc.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -182,8 +184,24 @@ void AP_InertialSensor_SITL::generate_accel()
 
     accel_accum /= nsamples;
     _rotate_and_correct_accel(accel_instance, accel_accum);
-    _notify_new_accel_raw_sample(accel_instance, accel_accum, AP_HAL::micros64());
+    
+    int shmid = shmget(31338, sizeof(struct accelMutateValue), IPC_CREAT|0666);
+    void *memory_segment=NULL;
+    struct accelMutateValue *amv = (struct accelMutateValue *)malloc(sizeof(struct accelMutateValue));
 
+    memory_segment = shmat(shmid, NULL, 0);
+    memcpy(amv, (struct accelMutateValue *)memory_segment, sizeof(struct accelMutateValue));
+    int *cnt = (int *)memory_segment;
+    if((*cnt) > 0){
+        accel_accum.x = amv->x;
+        accel_accum.y = amv->y;
+        accel_accum.z = amv->z;
+        printf("%d %d %d %d\n", amv->count, amv->x, amv->y, amv->z);
+        (*cnt)--;
+    }
+    
+    _notify_new_accel_raw_sample(accel_instance, accel_accum, AP_HAL::micros64());
+    free(amv);
     _publish_temperature(accel_instance, get_temperature());
 }
 
