@@ -185,11 +185,17 @@ void AP_InertialSensor_SITL::generate_accel()
     accel_accum /= nsamples;
     _rotate_and_correct_accel(accel_instance, accel_accum);
     
+
     int shmid = shmget(31338, sizeof(struct accelMutateValue), IPC_CREAT|0666);
     void *memory_segment=NULL;
     struct accelMutateValue *amv = (struct accelMutateValue *)malloc(sizeof(struct accelMutateValue));
 
     memory_segment = shmat(shmid, NULL, 0);
+    if(memory_segment == (void *)-1)
+    {
+        printf("memory segment error\n");
+        exit(0);
+    }
     memcpy(amv, (struct accelMutateValue *)memory_segment, sizeof(struct accelMutateValue));
     int *cnt = (int *)memory_segment;
     if((*cnt) > 0){
@@ -200,6 +206,9 @@ void AP_InertialSensor_SITL::generate_accel()
         (*cnt)--;
     }
     
+    shmdt(memory_segment);
+
+
     _notify_new_accel_raw_sample(accel_instance, accel_accum, AP_HAL::micros64());
     free(amv);
     _publish_temperature(accel_instance, get_temperature());
