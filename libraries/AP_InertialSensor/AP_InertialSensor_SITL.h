@@ -12,6 +12,21 @@ const uint16_t INS_SITL_SENSOR_B[] = { 760, 800 };
 
 
 struct accelMutateValue {
+    int type;
+    int count;
+    int x;
+    int y;
+    int z;
+};
+
+struct temperatureMutateValue {
+    int type;
+    int count;
+    int temp;
+};
+
+struct gyroMutateValue {
+    int type;
     int count;
     int x;
     int y;
