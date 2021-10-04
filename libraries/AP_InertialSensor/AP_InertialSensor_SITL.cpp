@@ -1,9 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_SITL.h"
+#include "SensorFuzzer_Bridge.h"
 #include <SITL/SITL.h>
-#include <stdio.h>
-#include <sys/shm.h>
-#include <sys/ipc.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -66,7 +64,7 @@ float AP_InertialSensor_SITL::get_temperature(void)
 
     int shmid = shmget(31340, 100, IPC_CREAT|0666);
     void *memory_segment=NULL;
-    struct temperatureMutateValue *amv = (struct temperatureMutateValue *)malloc(sizeof(struct temperatureMutateValue));
+    //struct temperatureMutateValue *amv = (struct temperatureMutateValue *)malloc(sizeof(struct temperatureMutateValue));
 
     memory_segment = shmat(shmid, NULL, 0);
     if(memory_segment == (void *)-1)
@@ -74,13 +72,13 @@ float AP_InertialSensor_SITL::get_temperature(void)
         printf("memory segment error\n");
         exit(0);
     }
-    memcpy(amv, (struct temperatureMutateValue *)memory_segment, sizeof(struct temperatureMutateValue));
-    int *cnt = (int *)memory_segment;
-    if((*cnt) > 0 && amv->type == 2){
-        returnValue = amv->temp;
-        printf("%d %d\n", amv->count, amv->temp);
-        (*cnt)--;
-    }
+    //memcpy(amv, (struct temperatureMutateValue *)memory_segment, sizeof(struct temperatureMutateValue));
+    //int *cnt = (int *)memory_segment;
+    //if((*cnt) > 0 && amv->type == 2){
+    //    returnValue = amv->temp;
+    //    printf("%d %d\n", amv->count, amv->temp);
+    //    (*cnt)--;
+    //}
     
     shmdt(memory_segment);
 
@@ -212,7 +210,7 @@ void AP_InertialSensor_SITL::generate_accel()
 
     int shmid = shmget(31340, 100, IPC_CREAT|0666);
     void *memory_segment=NULL;
-    struct accelMutateValue *amv = (struct accelMutateValue *)malloc(sizeof(struct accelMutateValue));
+    //struct accelMutateValue *amv = (struct accelMutateValue *)malloc(sizeof(struct accelMutateValue));
 
     memory_segment = shmat(shmid, NULL, 0);
     if(memory_segment == (void *)-1)
@@ -220,8 +218,8 @@ void AP_InertialSensor_SITL::generate_accel()
         printf("memory segment error\n");
         exit(0);
     }
-    memcpy(amv, (struct accelMutateValue *)memory_segment, sizeof(struct accelMutateValue));
-    int *cnt = (int *)memory_segment;
+    //memcpy(amv, (struct accelMutateValue *)memory_segment, sizeof(struct accelMutateValue));
+    /*int *cnt = (int *)memory_segment;
     if((*cnt) > 0 && amv->type == 1){
         accel_accum.x = amv->x;
         accel_accum.y = amv->y;
@@ -229,12 +227,13 @@ void AP_InertialSensor_SITL::generate_accel()
         printf("%d %d %d %d\n", amv->count, amv->x, amv->y, amv->z);
         (*cnt)--;
     }
+    */
     
     shmdt(memory_segment);
 
 
     _notify_new_accel_raw_sample(accel_instance, accel_accum, AP_HAL::micros64());
-    free(amv);
+    //free(amv);
     _publish_temperature(accel_instance, get_temperature());
 }
 
@@ -321,29 +320,10 @@ void AP_InertialSensor_SITL::generate_gyro()
     gyro_accum /= nsamples;
     _rotate_and_correct_gyro(gyro_instance, gyro_accum);
 
-
-    int shmid = shmget(31340, 100, IPC_CREAT|0666);
-    void *memory_segment=NULL;
-    struct gyroMutateValue *amv = (struct gyroMutateValue *)malloc(sizeof(struct gyroMutateValue));
-
-    memory_segment = shmat(shmid, NULL, 0);
-    if(memory_segment == (void *)-1)
-    {
-        printf("memory segment error\n");
-        exit(0);
-    }
-    memcpy(amv, (struct gyroMutateValue *)memory_segment, sizeof(struct gyroMutateValue));
-    int *cnt = (int *)memory_segment;
-    if((*cnt) > 0 && amv->type == 1){
-        gyro_accum.x = amv->x;
-        gyro_accum.y = amv->y;
-        gyro_accum.z = amv->z;
-        printf("%d %d %d %d\n", amv->count, amv->x, amv->y, amv->z);
-        (*cnt)--;
-    }
-    
-    shmdt(memory_segment);
-
+    // ks : hooking
+    GyroBridge gyroBridge;
+    gyroBridge.sendSensorValue(gyro_accum);
+    //gyro_accum = gyroBridge.recvSensorValue();
 
     _notify_new_gyro_raw_sample(gyro_instance, gyro_accum, AP_HAL::micros64());
 }
