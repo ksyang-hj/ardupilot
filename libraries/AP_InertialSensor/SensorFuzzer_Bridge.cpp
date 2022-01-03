@@ -1,3 +1,15 @@
+// todo : 
+
+// 정해진 비율로만 쭉 퍼징하게 할 지, 아니면 서버에서 계속 보내줄건지... 이건 일단 서버에서 준 값으로 해보고, 정 안되면 정해진 비율로
+// 특정 주파수율로 센서값을 읽어오는게 맞는지 확인하기
+
+//void GyroBridge::mutate(Vector3f originGyroData)
+//{
+
+//}
+//gyroBridge.mutate(gyro_accum);
+
+
 #include "SensorFuzzer_Bridge.h"
 
 GyroBridge::GyroBridge()
@@ -8,32 +20,48 @@ GyroBridge::GyroBridge()
     shmSize         = 100;
 }
 
+
+Vector3f GyroBridge::ratioMutate(Vector3f gyroData)
+{
+    void *shmAddr = getShmAddr(shmReadKey, shmSize);
+
+    struct gyroBridgeStruct *getGyroData = (struct gyroBridgeStruct *)shmAddr;
+    if(getGyroData->count > 0 && getGyroData->type == 2){
+        printf("hit! %d\n", getGyroData->count);
+        gyroData.x *= getGyroData->x;
+        gyroData.y *= getGyroData->y;
+        gyroData.z *= getGyroData->z;
+        getGyroData->count--;
+    }
+
+    shmdt(shmAddr);
+
+    return gyroData;
+}
+
 void GyroBridge::sendSensorValue(Vector3f originGyroData)
 {
     void *shmAddr = getShmAddr(shmWriteKey, shmSize);
 
     struct gyroBridgeStruct *setGyroData = (struct gyroBridgeStruct *)shmAddr;
-    setGyroData->type= 1;
+    setGyroData->type = 1;
     setGyroData->count = 1;
     setGyroData->x = originGyroData.x;
     setGyroData->y = originGyroData.y;
     setGyroData->z = originGyroData.z;
-    printf("%f %f %f\n", setGyroData->x, setGyroData->y, setGyroData->z);
     
     shmdt(shmAddr);
 }
 
-Vector3f GyroBridge::recvSensorValue()
+Vector3f GyroBridge::recvSensorValue(Vector3f gyroData)
 {
     void *shmAddr = getShmAddr(shmReadKey, shmSize);
 
     struct gyroBridgeStruct *getGyroData = (struct gyroBridgeStruct *)shmAddr;
-    Vector3f gyroData;
     if(getGyroData->count > 0 && getGyroData->type == 1){
         gyroData.x = getGyroData->x;
         gyroData.y = getGyroData->y;
         gyroData.z = getGyroData->z;
-        printf("%d %f %f %f\n", getGyroData->count, getGyroData->x, getGyroData->y, getGyroData->z);
         getGyroData->count--;
     }
 

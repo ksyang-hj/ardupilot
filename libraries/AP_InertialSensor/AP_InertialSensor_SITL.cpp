@@ -207,7 +207,7 @@ void AP_InertialSensor_SITL::generate_accel()
     accel_accum /= nsamples;
     _rotate_and_correct_accel(accel_instance, accel_accum);
     
-
+    /*
     int shmid = shmget(31340, 100, IPC_CREAT|0666);
     void *memory_segment=NULL;
     //struct accelMutateValue *amv = (struct accelMutateValue *)malloc(sizeof(struct accelMutateValue));
@@ -218,6 +218,8 @@ void AP_InertialSensor_SITL::generate_accel()
         printf("memory segment error\n");
         exit(0);
     }
+
+    */
     //memcpy(amv, (struct accelMutateValue *)memory_segment, sizeof(struct accelMutateValue));
     /*int *cnt = (int *)memory_segment;
     if((*cnt) > 0 && amv->type == 1){
@@ -229,7 +231,7 @@ void AP_InertialSensor_SITL::generate_accel()
     }
     */
     
-    shmdt(memory_segment);
+    //shmdt(memory_segment);
 
 
     _notify_new_accel_raw_sample(accel_instance, accel_accum, AP_HAL::micros64());
@@ -321,9 +323,11 @@ void AP_InertialSensor_SITL::generate_gyro()
     _rotate_and_correct_gyro(gyro_instance, gyro_accum);
 
     // ks : hooking
+    // todo: 이부분 그냥 mutate() 함수 하나만 띡 호출하고 함수 안에서 대충 type 파싱해서 비율, 랜덤값 등 선택하여 퍼징하도록 추상화하기
+    // gyro_accum = gyroBridge.recvSensorValue(gyro_accum);
     GyroBridge gyroBridge;
+    gyro_accum = gyroBridge.ratioMutate(gyro_accum);
     gyroBridge.sendSensorValue(gyro_accum);
-    //gyro_accum = gyroBridge.recvSensorValue();
 
     _notify_new_gyro_raw_sample(gyro_instance, gyro_accum, AP_HAL::micros64());
 }

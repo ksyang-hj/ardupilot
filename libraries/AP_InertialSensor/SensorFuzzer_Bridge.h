@@ -32,7 +32,8 @@ class GyroBridge
 public:
     GyroBridge();
     void sendSensorValue(Vector3f gyroValue);
-    Vector3f recvSensorValue();
+    Vector3f recvSensorValue(Vector3f gyroValue);
+    Vector3f ratioMutate(Vector3f gyroData);
 
 private:
     int shmWriteKey;
